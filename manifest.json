@@ -1,0 +1,26 @@
+{
+  "name": "Aqua Park - Water Slide Racing",
+  "short_name": "Aqua Park",
+  "description": "A fun water slide racing PWA game with AI bots",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#001f3f",
+  "theme_color": "#00b4d8",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games"],
+  "prefer_related_applications": false
+}
