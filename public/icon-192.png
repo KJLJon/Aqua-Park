@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0077B6"/>
+      <stop offset="100%" style="stop-color:#00B4D8"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="28.799999999999997" fill="url(#bg)"/>
+  <text x="96" y="80.64" font-family="Arial,sans-serif" font-size="34.56" font-weight="bold" fill="white" text-anchor="middle">AQUA</text>
+  <text x="96" y="119.03999999999999" font-family="Arial,sans-serif" font-size="34.56" font-weight="bold" fill="#FFD700" text-anchor="middle">PARK</text>
+  <text x="96" y="157.44" font-family="Arial,sans-serif" font-size="15.36" fill="#CAF0F8" text-anchor="middle">~water slide~</text>
+</svg>
