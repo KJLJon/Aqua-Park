@@ -23,7 +23,7 @@ export const PHYSICS = {
   JUMP_FORCE: -250,
   JUMP_DURATION: 0.5,
   GRAVITY: 600,
-  STUN_DURATION: 0.4,
+  STUN_DURATION: 0.25,
   COLLISION_PUSH: 150,
   COLLISION_RADIUS: 20,
   SPEED_BOOST_MULT: 1.5,
@@ -133,12 +133,20 @@ export function updatePlayerPhysics(
   // No movement while stunned
   if (player.stunTimer > 0) return;
 
-  // Forward acceleration (downhill)
-  const slopeBoost = -segment.slope * 50;
+  // Forward acceleration (downhill gravity pulls you along the slide)
+  const slopeBoost = -segment.slope * 150;
   const speedMult = player.speedBoostTimer > 0 ? PHYSICS.SPEED_BOOST_MULT : 1;
-  player.forwardSpeed += (PHYSICS.FORWARD_ACCEL + slopeBoost) * dt;
-  player.forwardSpeed = Math.min(player.forwardSpeed * speedMult, PHYSICS.MAX_FORWARD_SPEED);
-  player.forwardSpeed *= segment.friction;
+  const accel = (PHYSICS.FORWARD_ACCEL + slopeBoost) * speedMult;
+  player.forwardSpeed += accel * dt;
+
+  // Water drag proportional to speed (replaces broken per-frame friction multiply)
+  const dragCoeff = (1 - segment.friction) * 15;
+  player.forwardSpeed -= dragCoeff * player.forwardSpeed * dt;
+
+  // Clamp to max speed (boost raises the cap)
+  const maxSpeed = PHYSICS.MAX_FORWARD_SPEED * speedMult;
+  player.forwardSpeed = Math.min(player.forwardSpeed, maxSpeed);
+  player.forwardSpeed = Math.max(0, player.forwardSpeed);
 
   // Lateral movement
   const targetLateral = (input.left ? -1 : 0) + (input.right ? 1 : 0);
@@ -234,15 +242,15 @@ export function applyObstacleEffect(player: PlayerState, type: ObstacleType): vo
   if (player.hasShield) return;
   switch (type) {
     case 'barrel':
-      player.forwardSpeed *= 0.5;
-      player.stunTimer = PHYSICS.STUN_DURATION * 1.5;
+      player.forwardSpeed *= 0.7;
+      player.stunTimer = PHYSICS.STUN_DURATION;
       break;
     case 'ring':
-      player.forwardSpeed *= 0.7;
-      player.lateralSpeed *= -0.5;
+      player.forwardSpeed *= 0.85;
+      player.lateralSpeed *= -0.3;
       break;
     case 'bumper':
-      player.lateralSpeed += (player.x > PHYSICS.SLIDE_WIDTH / 2 ? 1 : -1) * PHYSICS.COLLISION_PUSH * 1.5;
+      player.lateralSpeed += (player.x > PHYSICS.SLIDE_WIDTH / 2 ? 1 : -1) * PHYSICS.COLLISION_PUSH * 1.2;
       player.stunTimer = PHYSICS.STUN_DURATION;
       break;
   }

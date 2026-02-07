@@ -273,7 +273,7 @@ describe('applyObstacleEffect', () => {
     const player = createPlayerState('p1', 'Test', 2, false, 0);
     player.forwardSpeed = 200;
     applyObstacleEffect(player, 'barrel');
-    expect(player.forwardSpeed).toBe(100);
+    expect(player.forwardSpeed).toBe(140);
     expect(player.stunTimer).toBeGreaterThan(0);
   });
 
