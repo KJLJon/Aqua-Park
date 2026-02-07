@@ -75,15 +75,17 @@ export class Controls {
 
   private setupButtons(): void {
     const { width, height } = this.scene.cameras.main;
-    const btnSize = 70;
-    const margin = 20;
+    const btnSize = 80;
+    const margin = 15;
     const bottomY = height - margin - btnSize / 2;
+    // Larger hit zones for easier touch (1.4x button size)
+    const hitSize = btnSize * 1.4;
 
     // Left button
     this.leftBtn = this.createButton(margin + btnSize / 2, bottomY, btnSize, 'arrow_left');
     this.leftBtn.setScrollFactor(0).setDepth(950);
 
-    const leftZone = this.scene.add.zone(margin + btnSize / 2, bottomY, btnSize, btnSize)
+    const leftZone = this.scene.add.zone(margin + btnSize / 2, bottomY, hitSize, hitSize)
       .setInteractive()
       .setScrollFactor(0)
       .setDepth(951);
@@ -93,10 +95,10 @@ export class Controls {
     leftZone.on('pointerout', () => { this.input.left = false; });
 
     // Right button
-    this.rightBtn = this.createButton(margin + btnSize * 1.8, bottomY, btnSize, 'arrow_right');
+    this.rightBtn = this.createButton(margin + btnSize * 1.9, bottomY, btnSize, 'arrow_right');
     this.rightBtn.setScrollFactor(0).setDepth(950);
 
-    const rightZone = this.scene.add.zone(margin + btnSize * 1.8, bottomY, btnSize, btnSize)
+    const rightZone = this.scene.add.zone(margin + btnSize * 1.9, bottomY, hitSize, hitSize)
       .setInteractive()
       .setScrollFactor(0)
       .setDepth(951);
@@ -105,11 +107,11 @@ export class Controls {
     rightZone.on('pointerup', () => { this.input.right = false; });
     rightZone.on('pointerout', () => { this.input.right = false; });
 
-    // Jump button
+    // Jump button (larger, on the right)
     this.jumpBtn = this.createButton(width - margin - btnSize / 2, bottomY, btnSize, 'jump_icon');
     this.jumpBtn.setScrollFactor(0).setDepth(950);
 
-    const jumpZone = this.scene.add.zone(width - margin - btnSize / 2, bottomY, btnSize, btnSize)
+    const jumpZone = this.scene.add.zone(width - margin - btnSize / 2, bottomY, hitSize, hitSize)
       .setInteractive()
       .setScrollFactor(0)
       .setDepth(951);

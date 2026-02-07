@@ -28,9 +28,9 @@ import { AudioManager } from '../audio';
 import { StorageManager } from '../../storage/storage';
 
 // Pseudo-3D projection constants
-const CAMERA_HEIGHT = 900;    // How high the camera is above the track
-const CAMERA_DEPTH = 120;     // Field depth (controls perspective intensity)
-const DRAW_DISTANCE = 150;    // How many segments ahead to draw
+const CAMERA_HEIGHT = 450;    // How high the camera is above the track
+const CAMERA_DEPTH = 200;     // Field depth (controls perspective intensity)
+const DRAW_DISTANCE = 200;    // How many segments ahead to draw
 const SEGMENT_LENGTH = 30;    // World units per render segment
 const ROAD_WIDTH = 1200;      // Track width in world units
 const TOTAL_LANES = 5;
@@ -605,40 +605,63 @@ export class GameScene extends Phaser.Scene {
 
       const screenX = seg.screenX + obj.laneOffset * seg.screenW;
       const screenY = seg.screenY;
-      const size = seg.scale * 400;
+      const size = seg.scale * 250;
 
       if (size < 2) return;
 
       if (obj.type === 'obstacle') {
-        // Red/brown obstacle
+        // Bright, dangerous obstacle colors
         const colors: Record<string, number> = {
-          barrel: 0x8B4513,
-          ring: 0xFF4444,
+          barrel: 0xCC3300,
+          ring: 0xFF2222,
           bumper: 0xFF6600,
         };
-        const c = colors[obj.obstacleType || 'barrel'] || 0x8B4513;
+        const c = colors[obj.obstacleType || 'barrel'] || 0xCC3300;
+        // Danger glow (pulsing)
+        const pulse = 0.4 + Math.sin(this.elapsedTime * 6 + obj.distance) * 0.2;
+        gfx.fillStyle(0xFF0000, pulse);
+        gfx.fillCircle(screenX, screenY - size / 2, size * 2.0);
+        // Main body
         gfx.fillStyle(c, 1);
         gfx.fillCircle(screenX, screenY - size / 2, size);
+        // Warning cross on obstacle
+        if (size > 4) {
+          gfx.lineStyle(Math.max(1, size * 0.2), 0xFFFF00, 0.9);
+          gfx.lineBetween(screenX - size * 0.5, screenY - size, screenX + size * 0.5, screenY);
+          gfx.lineBetween(screenX + size * 0.5, screenY - size, screenX - size * 0.5, screenY);
+        }
         // Highlight
         gfx.fillStyle(0xFFFFFF, 0.3);
         gfx.fillCircle(screenX - size * 0.3, screenY - size * 0.8, size * 0.3);
       } else if (obj.type === 'powerup') {
-        // Glowing powerup
+        // Glowing powerup with strong pulsing
         const colors: Record<string, number> = {
           speed_boost: 0xFFD700,
           shield: 0x4FC3F7,
           jump_boost: 0x76FF03,
         };
         const c = colors[obj.powerupType || 'speed_boost'] || 0xFFD700;
-        // Glow
-        gfx.fillStyle(c, 0.3);
-        gfx.fillCircle(screenX, screenY - size / 2, size * 1.8);
+        // Pulsing glow
+        const glowPulse = 1.5 + Math.sin(this.elapsedTime * 5 + obj.distance * 0.1) * 0.5;
+        gfx.fillStyle(c, 0.35);
+        gfx.fillCircle(screenX, screenY - size / 2, size * glowPulse * 1.2);
         // Core
         gfx.fillStyle(c, 1);
         gfx.fillCircle(screenX, screenY - size / 2, size);
-        // Sparkle
-        gfx.fillStyle(0xFFFFFF, 0.8);
-        gfx.fillCircle(screenX, screenY - size * 0.8, size * 0.3);
+        // Star sparkle
+        gfx.fillStyle(0xFFFFFF, 0.9);
+        gfx.fillCircle(screenX, screenY - size * 0.8, size * 0.35);
+        // Rotating sparkle dots
+        if (size > 4) {
+          const angle = this.elapsedTime * 3;
+          for (let s = 0; s < 4; s++) {
+            const a = angle + (s * Math.PI / 2);
+            const sx = screenX + Math.cos(a) * size * 1.3;
+            const sy = (screenY - size / 2) + Math.sin(a) * size * 1.3;
+            gfx.fillStyle(0xFFFFFF, 0.6);
+            gfx.fillCircle(sx, sy, size * 0.15);
+          }
+        }
       }
     });
   }
@@ -666,9 +689,9 @@ export class GameScene extends Phaser.Scene {
       if (p.id === human.id) {
         // Human player always at bottom-center
         screenX = w / 2 + this.getPlayerScreenX(human) * w * 0.3;
-        screenY = h * 0.78;
-        scale = 1.0;
-        if (p.isJumping) screenY -= 30;
+        screenY = h * 0.82;
+        scale = 0.5;
+        if (p.isJumping) screenY -= 20;
       } else {
         // Other players projected in 3D
         if (dz <= -50 || dz > DRAW_DISTANCE * SEGMENT_LENGTH) return;
@@ -690,7 +713,7 @@ export class GameScene extends Phaser.Scene {
         if (p.isJumping) screenY -= 15 * scale * 20;
       }
 
-      const baseSize = scale * 350;
+      const baseSize = scale * 200;
       if (baseSize < 3) return;
       const color = PLAYER_COLORS[p.skinIndex] || 0xFF6B6B;
 
@@ -779,31 +802,39 @@ export class GameScene extends Phaser.Scene {
     human: PlayerState,
     w: number, h: number
   ): void {
-    if (human.forwardSpeed < PHYSICS.MAX_FORWARD_SPEED * 0.3) return;
+    if (human.forwardSpeed < PHYSICS.MAX_FORWARD_SPEED * 0.1) return;
 
     const px = w / 2 + this.getPlayerScreenX(human) * w * 0.3;
-    const py = h * 0.82;
+    const py = h * 0.87;
     const intensity = Math.min(1, human.forwardSpeed / PHYSICS.MAX_FORWARD_SPEED);
 
-    // Splash droplets
-    const count = Math.floor(intensity * 6);
+    // Splash droplets (more at high speed)
+    const count = Math.floor(2 + intensity * 10);
     for (let i = 0; i < count; i++) {
       const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8;
-      const dist = 10 + Math.random() * 25 * intensity;
+      const dist = 8 + Math.random() * 30 * intensity;
       const sx = px + Math.cos(angle) * dist;
       const sy = py + Math.sin(angle) * dist * 0.5;
-      const size = 2 + Math.random() * 3;
-      gfx.fillStyle(0xADE8F4, 0.6);
+      const size = 1.5 + Math.random() * 3 * intensity;
+      gfx.fillStyle(0xADE8F4, 0.5 + intensity * 0.3);
       gfx.fillCircle(sx, sy, size);
     }
 
-    // Speed lines at high speed
-    if (intensity > 0.7) {
-      gfx.lineStyle(1, 0xFFFFFF, 0.3 * intensity);
-      for (let i = 0; i < 4; i++) {
-        const lx = px + (Math.random() - 0.5) * 60;
-        const ly = py - 20 - Math.random() * 30;
-        gfx.lineBetween(lx, ly, lx, ly + 15 + Math.random() * 15);
+    // Wake trail behind player
+    gfx.fillStyle(0xCAF0F8, 0.2 + intensity * 0.15);
+    gfx.fillEllipse(px, py + 5, 30 + intensity * 40, 8 + intensity * 6);
+
+    // Speed lines along the sides of the track at moderate+ speed
+    if (intensity > 0.3) {
+      const lineCount = Math.floor(intensity * 10);
+      const alpha = 0.15 + intensity * 0.25;
+      gfx.lineStyle(1, 0xFFFFFF, alpha);
+      for (let i = 0; i < lineCount; i++) {
+        const side = i % 2 === 0 ? -1 : 1;
+        const lx = px + side * (30 + Math.random() * 50);
+        const ly = h * 0.5 + Math.random() * (h * 0.35);
+        const lineLen = 10 + intensity * 25;
+        gfx.lineBetween(lx, ly, lx, ly + lineLen);
       }
     }
   }
@@ -861,31 +892,55 @@ export class GameScene extends Phaser.Scene {
     // Position: rank among all players by distance traveled
     const rank = this.players.filter(p => p.distanceTraveled > human.distanceTraveled).length + 1;
     this.posText.setText(`#${rank}`);
+    // Color by position: gold for 1st, silver for 2nd, bronze for 3rd
+    this.posText.setColor(rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : '#FFFFFF');
 
     // Time
     const m = Math.floor(this.elapsedTime / 60);
     const s = Math.floor(this.elapsedTime % 60);
-    this.timeText.setText(`${m}:${s.toString().padStart(2, '0')}`);
+    const cs = Math.floor((this.elapsedTime % 1) * 100);
+    this.timeText.setText(`${m}:${s.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`);
 
     // Speed
     this.speedText.setText(`${Math.floor(human.forwardSpeed)} km/h`);
     this.speedText.setColor(human.speedBoostTimer > 0 ? '#FFD700' : human.hasShield ? '#4FC3F7' : '#90E0EF');
 
-    // Progress
+    // Progress bar with bot markers
     const progress = Math.min(1, human.distanceTraveled / this.totalTrackLength);
     this.progressBar.clear();
+    // Background
     this.progressBar.fillStyle(0x003566, 0.8);
-    this.progressBar.fillRect(0, 0, w, 4);
+    this.progressBar.fillRoundedRect(10, 52, w - 20, 10, 5);
+    // Player progress (bright)
     this.progressBar.fillStyle(0x00B4D8, 1);
-    this.progressBar.fillRect(0, 0, w * progress, 4);
+    this.progressBar.fillRoundedRect(10, 52, (w - 20) * progress, 10, 5);
+    // Bot markers on progress bar
+    this.players.forEach(p => {
+      if (p.isBot && !p.finished) {
+        const botProgress = Math.min(1, p.distanceTraveled / this.totalTrackLength);
+        const bx = 10 + (w - 20) * botProgress;
+        const color = PLAYER_COLORS[p.skinIndex] || 0xFF6B6B;
+        this.progressBar.fillStyle(color, 0.9);
+        this.progressBar.fillCircle(bx, 57, 4);
+      }
+    });
+    // Player marker on progress bar (larger, on top)
+    const playerBarX = 10 + (w - 20) * progress;
+    this.progressBar.fillStyle(0xFFFFFF, 1);
+    this.progressBar.fillCircle(playerBarX, 57, 6);
+    this.progressBar.lineStyle(1, 0x00B4D8, 1);
+    this.progressBar.strokeCircle(playerBarX, 57, 6);
 
     // Powerup indicator
     if (human.speedBoostTimer > 0) {
       this.powerupText.setText(`SPEED BOOST ${Math.ceil(human.speedBoostTimer)}s`);
+      this.powerupText.setColor('#FFD700');
     } else if (human.hasShield) {
       this.powerupText.setText(`SHIELD ${Math.ceil(human.shieldTimer)}s`);
+      this.powerupText.setColor('#4FC3F7');
     } else if (human.jumpBoostTimer > 0) {
       this.powerupText.setText(`JUMP BOOST ${Math.ceil(human.jumpBoostTimer)}s`);
+      this.powerupText.setColor('#76FF03');
     } else {
       this.powerupText.setText('');
     }
